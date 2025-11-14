@@ -1,19 +1,33 @@
 #version 300 es
 precision highp float;
 
-in vec4 vertexPosition;   // location 0 
-in vec3 vertexNormal;     // location 1
-in vec4 vertexTexCoord;   // location 2
+// Attribute locations must match Program.PNT:
+// 0 -> vertexPosition, 1 -> vertexNormal, 2 -> vertexTexCoord
+in vec4 vertexPosition;
+in vec3 vertexNormal;
+in vec4 vertexTexCoord;
 
-uniform mat4 modelMatrix;
-uniform mat4 viewProjMatrix;
+// Your engine expects struct uniforms like this:
+struct Camera {
+  mat4 viewProjMatrix;
+};
+uniform Camera camera;
+
+struct GameObject {
+  mat4 modelMatrix;
+};
+uniform GameObject gameObject;
 
 out vec3 vNormal;
 out vec4 vTex;
 
 void main() {
-  gl_Position = viewProjMatrix * modelMatrix * vertexPosition;
-  // normal as direction (w=0) so translation doesn't affect
-  vNormal = (modelMatrix * vec4(vertexNormal, 0.0)).xyz;
+  // Use the struct uniforms instead of bare names
+  gl_Position = camera.viewProjMatrix * gameObject.modelMatrix * vertexPosition;
+
+  // Treat normal as a direction (w=0) so it ignores translation
+  vNormal = (gameObject.modelMatrix * vec4(vertexNormal, 0.0)).xyz;
+
+  // Pass homogeneous texcoord through
   vTex = vertexTexCoord;
 }
