@@ -7,6 +7,7 @@ import vision.gears.webglmath.*
 class Scene (
   val gl : WebGL2RenderingContext) {
 
+  // --- Existing programs ---
   val vsIdle = Shader(gl, GL.VERTEX_SHADER, "idle-vs.glsl")
   val fsSolid = Shader(gl, GL.FRAGMENT_SHADER, "solid-fs.glsl")
   val solidProgram = Program(gl, vsIdle, fsSolid, Program.PC)
@@ -19,6 +20,11 @@ class Scene (
   val fsBackground = Shader(gl, GL.FRAGMENT_SHADER, "background-fs.glsl")
   val backgroundProgram = Program(gl, vsQuad, fsBackground)
 
+  // --- Infinite plane program (vec4 pos + vec4 texcoord) ---
+  val vsInfinite = Shader(gl, GL.VERTEX_SHADER, "infiniteplane-vs.glsl")
+  val fsInfinite = Shader(gl, GL.FRAGMENT_SHADER, "infiniteplane-fs.glsl")
+  val planeProgram = Program(gl, vsInfinite, fsInfinite, Program.PNT) // PNT = position/normal/texcoord
+
   val texturedQuadGeometry = TexturedQuadGeometry(gl)
 
   val envTexture = TextureCube(gl,
@@ -27,42 +33,51 @@ class Scene (
     "media/posz512.jpg", "media/negz512.jpg"
   )
 
-  // LABTODO: load geometries from the JSON file, create Meshes
+  // JSON model
   val jsonLoader = JsonLoader()
   val slowpokeMeshes = jsonLoader.loadMeshes(gl,
     "media/slowpoke/slowpoke.json",
     Material(texturedProgram).apply{
       this["colorTexture"]?.set(
-        //Texture2D(gl, "media/slowpoke/YadonDh.png"))
-        envTexture)
+        // Texture2D(gl, "media/slowpoke/YadonDh.png")
+        envTexture
+      )
     },
     Material(texturedProgram).apply{
       this["colorTexture"]?.set(
-        //Texture2D(gl, "media/slowpoke/YadonEyeDh.png"))
-        envTexture)
+        // Texture2D(gl, "media/slowpoke/YadonEyeDh.png")
+        envTexture
+      )
     }
   )
 
-  
-
+  // Background
   val backgroundMaterial = Material(backgroundProgram)
   val backgroundMesh = Mesh(backgroundMaterial, texturedQuadGeometry)
   init{
-    backgroundMaterial["envTexture"]?.set( this.envTexture )
+    backgroundMaterial["envTexture"]?.set(this.envTexture)
   }
-  val gameObjects = ArrayList<GameObject>()
 
+  // --- Infinite plane: material + geometry + mesh + object ---
+  // Uses procedural checker in FS by default (no texture required)
+  val planeMaterial = Material(planeProgram)
+  val planeGeometry = InfinitePlaneGeometry(gl)
+  val planeMesh = Mesh(planeMaterial, planeGeometry)
+  val planeObject = GameObject(planeMesh)
+
+  val gameObjects = ArrayList<GameObject>()
   val slowpoke = GameObject(*slowpokeMeshes)
 
   init {
-    // LABTODO: create and add game object using meshes loaded from JSON
+    // draw order: background, plane, then other objects
     gameObjects += GameObject(backgroundMesh)
+    gameObjects += planeObject
     gameObjects += slowpoke
   }
 
-  // LABTODO: replace with 3D camera
+  // 3D camera
   val camera = PerspectiveCamera(*Program.all).apply{
-    position.set(1f, 1f)
+    position.set(1f, 1f) // if your PerspectiveCamera is 3D, you can set .z as needed
   }
 
   val timeAtFirstFrame = Date().getTime()
@@ -70,7 +85,7 @@ class Scene (
 
   fun resize(canvas : HTMLCanvasElement) {
     camera.setAspectRatio(canvas.width.toFloat() / canvas.height.toFloat())
-    gl.viewport(0, 0, canvas.width, canvas.height)//#viewport# tell the rasterizer which part of the canvas to draw to ˙HUN˙ a raszterizáló ide rajzoljon
+    gl.viewport(0, 0, canvas.width, canvas.height)
   }
 
   @Suppress("UNUSED_PARAMETER")
@@ -82,20 +97,18 @@ class Scene (
 
     gl.enable(GL.DEPTH_TEST)
 
-    //LABTODO: move camera
+    // move camera
     camera.move(dt, keysPressed)
 
-    gl.clearColor(0.3f, 0.0f, 0.3f, 1.0f)//## red, green, blue, alpha in [0, 1]
-    gl.clearDepth(1.0f)//## will be useful in 3D ˙HUN˙ 3D-ben lesz hasznos
-    gl.clear(GL.COLOR_BUFFER_BIT or GL.DEPTH_BUFFER_BIT)//#or# bitwise OR of flags
+    gl.clearColor(0.3f, 0.0f, 0.3f, 1.0f)
+    gl.clearDepth(1.0f)
+    gl.clear(GL.COLOR_BUFFER_BIT or GL.DEPTH_BUFFER_BIT)
 
     gl.enable(GL.BLEND)
-    gl.blendFunc(
-      GL.SRC_ALPHA,
-      GL.ONE_MINUS_SRC_ALPHA)
+    gl.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA)
 
-    slowpoke.roll += dt;
-    slowpoke.pitch += dt / 5.0f;
+    slowpoke.roll += dt
+    slowpoke.pitch += dt / 5.0f
 
     for (gameObject in gameObjects) {
       gameObject.move(dt, t, keysPressed, gameObjects)
