@@ -77,7 +77,7 @@ class Scene (
 
   // 3D camera
   val camera = PerspectiveCamera(*Program.all).apply{
-    position.set(1f, 1f) // if your PerspectiveCamera is 3D, you can set .z as needed
+    position.set(0f, 1.2f, 3f) // if your PerspectiveCamera is 3D, you can set .z as needed
   }
 
   val timeAtFirstFrame = Date().getTime()

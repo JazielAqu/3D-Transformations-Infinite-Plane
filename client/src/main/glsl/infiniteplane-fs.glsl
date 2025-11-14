@@ -26,5 +26,5 @@ void main() {
   // Simple facing tweak so it's not pitch black if you later add lights
   vec3 n = normalize(vNormal);
   float ndotl = clamp(0.4 + 0.6 * n.y, 0.0, 1.0);
-  fragColor = vec4(base * ndotl, 1.0);
+  fragColor = vec4(0.2, 0.8, 0.2, 1.0);
 }
