@@ -1,11 +1,10 @@
 import org.w3c.dom.HTMLCanvasElement
-import org.khronos.webgl.WebGLRenderingContext as GL //# GL# we need this for the constants declared ˙HUN˙ a constansok miatt kell
+import org.khronos.webgl.WebGLRenderingContext as GL
 import kotlin.math.*
 import kotlin.js.Date
 import vision.gears.webglmath.*
 
-class Scene (
-  val gl : WebGL2RenderingContext) {
+class Scene (val gl : WebGL2RenderingContext) {
 
   // --- Existing programs ---
   val vsIdle = Shader(gl, GL.VERTEX_SHADER, "idle-vs.glsl")
@@ -23,7 +22,7 @@ class Scene (
   // --- Infinite plane program (vec4 pos + vec4 texcoord) ---
   val vsInfinite = Shader(gl, GL.VERTEX_SHADER, "infiniteplane-vs.glsl")
   val fsInfinite = Shader(gl, GL.FRAGMENT_SHADER, "infiniteplane-fs.glsl")
-  val planeProgram = Program(gl, vsInfinite, fsInfinite, Program.PNT) // PNT = position/normal/texcoord
+  val planeProgram = Program(gl, vsInfinite, fsInfinite, Program.PNT)
 
   val texturedQuadGeometry = TexturedQuadGeometry(gl)
 
@@ -37,29 +36,20 @@ class Scene (
   val jsonLoader = JsonLoader()
   val slowpokeMeshes = jsonLoader.loadMeshes(gl,
     "media/slowpoke/slowpoke.json",
-    Material(texturedProgram).apply{
-      this["colorTexture"]?.set(
-        // Texture2D(gl, "media/slowpoke/YadonDh.png")
-        envTexture
-      )
+    Material(texturedProgram).apply {
+      this["colorTexture"]?.set(envTexture)
     },
-    Material(texturedProgram).apply{
-      this["colorTexture"]?.set(
-        // Texture2D(gl, "media/slowpoke/YadonEyeDh.png")
-        envTexture
-      )
+    Material(texturedProgram).apply {
+      this["colorTexture"]?.set(envTexture)
     }
   )
 
   // Background
   val backgroundMaterial = Material(backgroundProgram)
   val backgroundMesh = Mesh(backgroundMaterial, texturedQuadGeometry)
-  init{
-    backgroundMaterial["envTexture"]?.set(this.envTexture)
-  }
+  init { backgroundMaterial["envTexture"]?.set(this.envTexture) }
 
   // --- Infinite plane: material + geometry + mesh + object ---
-  // Uses procedural checker in FS by default (no texture required)
   val planeMaterial = Material(planeProgram)
   val planeGeometry = InfinitePlaneGeometry(gl)
   val planeMesh = Mesh(planeMaterial, planeGeometry)
@@ -69,15 +59,15 @@ class Scene (
   val slowpoke = GameObject(*slowpokeMeshes)
 
   init {
-    // draw order: background, plane, then other objects
+    // draw order: background -> plane -> slowpoke
     gameObjects += GameObject(backgroundMesh)
     gameObjects += planeObject
     gameObjects += slowpoke
   }
 
-  // 3D camera
-  val camera = PerspectiveCamera(*Program.all).apply{
-    position.set(0f, 1.2f, 3f) // if your PerspectiveCamera is 3D, you can set .z as needed
+  // 3D camera (x,y,z)
+  val camera = PerspectiveCamera(*Program.all).apply {
+    position.set(0f, 1.2f, 3f)
   }
 
   val timeAtFirstFrame = Date().getTime()
@@ -97,7 +87,6 @@ class Scene (
 
     gl.enable(GL.DEPTH_TEST)
 
-    // move camera
     camera.move(dt, keysPressed)
 
     gl.clearColor(0.3f, 0.0f, 0.3f, 1.0f)
